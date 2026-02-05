@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3c649504-26d0-4bc3-b129-ea162517e47b" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="user-registration-validationFlow" doc:id="83367296-a61c-4c33-87f0-96808c33286e" >
+		<http:listener doc:name="Listener" doc:id="63a703d5-91e4-4b1d-bcb5-5504671f3c34" config-ref="HTTP_Listener_config" allowedMethods="POST" path="/registerUser">
+			<http:error-response statusCode="#[vars.httpStatus]" />
+		</http:listener>
+		<validation:is-not-null doc:name="Is not null" doc:id="edc29201-8bcc-4d11-845b-23ac819dbd3b" value='#[payload."name"]' message="Name is mandatory"/>
+		<validation:is-not-null doc:name="Is not null" doc:id="4d96f88c-4ee8-4282-a4b7-694f2fe69fc3" value='#[payload."email"]' message="Email is mandatory"/>
+		<validation:is-not-null doc:name="Is not null" doc:id="31f1b911-389b-4a22-8f10-4c787b9644be" value='#[payload."role"]' message="Role is mandatory"/>
+		<validation:is-email doc:name="Is email" doc:id="d7bcbd01-7bd7-458f-a300-589bdc169082" email='#[payload."email"]' message="Invalid Email"/>
+		<validation:matches-regex doc:name="Matches regex" doc:id="1605e1a3-57b1-4ee4-9b57-228bbac7f365" value='#[payload."email"]' regex="^[A-Za-z0-9+_.-]+@(.+)$" message="Invalid email format"/>
+		<validation:is-true doc:name="Is true" doc:id="161f16d4-189f-4626-b5ab-f369e1e7bb70" expression='#[ if ((payload."role" == "admin") or (payload."role" == "user")) true else false]' message="Role must be Admin or User"/>
+		<!--  <choice doc:name="Choice" doc:id="2d6c3340-e413-49cb-b57f-b7dc02b01d78" >
+			<when expression='#[payload."role" == "admin"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="a7ec6683-0bc8-432c-b545-654ee624691f" message='"Admin User"'/>
+			</when>
+			<otherwise >
+				<set-variable value="400" doc:name="Set Variable" doc:id="23858e65-1411-404e-852d-e434056335ec" variableName="httpStatus"/>
+				<raise-error doc:name="Raise error" doc:id="6135d936-896f-4507-b61c-b0a0a8ea2aae" type="INVALID:CUSTOM" description="User must be Admin"/>
+			</otherwise>
+		</choice> -->
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="52cb2678-75e8-40c9-bd3b-983f3bd5ec84" />
+		<logger level="INFO" doc:name="Logger" doc:id="f50dff5a-3028-40f2-a3c6-c6450d412671" message="#[payload]"/>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a9129b11-9d8a-4410-8fd7-f37d5f3830bb" type="VALIDATION:*">
+				<set-variable value="400" doc:name="Set Variable" doc:id="e6204baa-2c19-4d0b-b097-65ded83983e1" variableName="httpStatus"/>
+				<set-payload value="#[error]" doc:name="Set Payload" doc:id="2fc2fd69-0d20-4f76-87ba-de62a5fc03f7" />
+				<logger level="INFO" doc:name="Logger" doc:id="af1dfcee-6a1b-4cd0-ba43-19020c92f190" message="#[payload]"/>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b43c6076-a2b9-4ea3-a168-d0404f1e635a" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="33ca7974-83ff-4f13-8a84-23d8476f9c3f" message="#[error]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
